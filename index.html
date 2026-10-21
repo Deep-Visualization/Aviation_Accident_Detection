@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flight Weather Risk Check</title>
+    <title>Aviation Accident Risk Prediction</title>
     <meta name="description" content="Pick a city and an aircraft type to get live weather, a weather risk score, and what 87,944 NTSB accident records show for similar flights.">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,8 +16,7 @@
 
 <header class="titlebar">
     <div class="wrap">
-        <p class="eyebrow">Aviation Accident Risk Prediction</p>
-        <h1>Flight Weather Risk Check</h1>
+        <h1>Aviation Accident Risk Prediction</h1>
         <p class="subtitle">Choose a departure city and an aircraft. The page gets the live weather, scores the weather risk, and shows what nearly 88,000 NTSB accident records say about similar flights.</p>
     </div>
 </header>
@@ -163,7 +162,7 @@
     <section aria-labelledby="about-title" class="about">
         <h2 id="about-title" class="section-title fade-item">About this project</h2>
         <div class="card fade-item">
-            <p>The interactive web version of my Aviation Accident Risk Prediction and Analysis System, built for CIS 550 – Advanced Machine Learning in the M.S. program at the University of Massachusetts Dartmouth. The original Python project (Flask app, Random Forest model with SMOTE, Streamlit and Power BI dashboards) is in this repository.</p>
+            <p>The interactive web version of my Master's project, the Aviation Accident Risk Prediction and Analysis System, built for CIS 550 – Advanced Machine Learning at the University of Massachusetts Dartmouth (instructor: Dr. Firas Khatib, May 2026). The original Python project (Flask app, Random Forest model with SMOTE, Streamlit and Power BI dashboards) is in this repository.</p>
             <p><strong>Data:</strong> NTSB Aviation Accident Database, cleaned (<code>NTSB Cleaned dataset.xlsx</code>): 87,944 accidents from 1982 to 2022, about 92% in the United States. <code>Build_data.py</code> converts the spreadsheet into <code>Accidents.json</code> for this page.</p>
         </div>
     </section>
