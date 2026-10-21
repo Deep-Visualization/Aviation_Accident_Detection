@@ -3,7 +3,7 @@ Aviation Accident Risk Prediction and Analysis System
 Motivated by the 2025 aviation tragedy in India that claimed over 260 lives — this project applies machine learning and data analytics to identify aviation risk patterns and contribute to safer skies.
 
 Overview
-This project presents a full-stack Aviation Accident Risk Prediction and Analysis System developed as a Master's project for CIS 550 – Advanced Machine Learning at the University of Massachusetts Dartmouth.
+This project presents a full-stack Aviation Accident Risk Prediction and Analysis System developed as a Master's project for CIS 600 at the University of Massachusetts Dartmouth.
 The system combines:
 
  Machine Learning — Random Forest Classifier with SMOTE balancing
