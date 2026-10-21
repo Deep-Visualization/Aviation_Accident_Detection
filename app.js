@@ -147,20 +147,41 @@ function useManual() {
     render();
 }
 
+// Sample values from the sliders, used until live weather arrives or if it can't be reached
+function sampleWeather(source) {
+    return {
+        temp: +d3.select("#s-temp").property("value"),
+        humidity: +d3.select("#s-hum").property("value"),
+        wind: +d3.select("#s-wind").property("value"),
+        visibility: +d3.select("#s-vis").property("value"),
+        condition: d3.select("#s-cond").property("value"),
+        time: null,
+        source
+    };
+}
+
+let request = 0;
 function getLiveWeather() {
     const [name, lat, lon] = CITIES[+d3.select("#city").property("value")];
+    const id = ++request;
     d3.select("#live-status").text(`Getting the current weather for ${name}…`);
+    // Visibility is read from the hourly forecast for the current hour
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-        `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,visibility&wind_speed_unit=ms&timezone=auto`;
+        `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code` +
+        `&hourly=visibility&forecast_days=1&wind_speed_unit=ms&timezone=auto`;
     fetch(url)
         .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
         .then(data => {
+            if (id !== request) return; // a newer city was picked
             const c = data.current;
+            const hour = c.time.slice(0, 13) + ":00";
+            const i = data.hourly ? data.hourly.time.indexOf(hour) : -1;
+            const vis = i >= 0 && data.hourly.visibility[i] != null ? data.hourly.visibility[i] : 10000;
             weather = {
                 temp: c.temperature_2m,
                 humidity: c.relative_humidity_2m,
                 wind: c.wind_speed_10m,
-                visibility: c.visibility != null ? c.visibility : 10000,
+                visibility: vis,
                 condition: conditionName(c.weather_code),
                 time: c.time,
                 source: "Live weather · Open-Meteo"
@@ -169,7 +190,10 @@ function getLiveWeather() {
             render();
         })
         .catch(() => {
-            d3.select("#live-status").text("Live weather isn't available right now. Tick \"Enter the weather myself\" to set the conditions.");
+            if (id !== request) return;
+            weather = sampleWeather("Sample values");
+            d3.select("#live-status").text("Live weather isn't available right now, so sample values are shown. Tick \"Enter the weather myself\" to set the conditions.");
+            render();
         });
 }
 
@@ -333,6 +357,8 @@ d3.json("Accidents.json").then(data => {
     d3.select("#hist-note").text("The accident records couldn't load. Make sure Accidents.json is in the repository, then refresh.");
 });
 
+weather = sampleWeather("Sample values");
+render();
 getLiveWeather();
 
 window.addEventListener("resize", debounce(render, 150));
