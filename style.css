@@ -1,0 +1,496 @@
+/* =========================================================
+   Theme: Flight & sky
+   Night-sky navy title bar, clear-sky blue, white cloud cards.
+   Solid colors only, square corners. Chart colors live in app.js.
+   ========================================================= */
+:root {
+    --page:        #F2F7FB;  /* pale morning sky */
+    --surface:     #FFFFFF;  /* cloud white cards */
+    --border:      #CFDCE8;
+    --navy:        #0B2545;  /* night sky: title bar */
+    --navy-text:   #FFFFFF;
+    --sky:         #DCEBF7;  /* daytime sky: filter bar */
+    --sky-text:    #000000;
+    --runway:      #1F5F99;  /* buttons */
+    --runway-text: #FFFFFF;
+    --runway-hover:#174B79;
+    --beacon:      #E8772E;  /* runway-light orange: stripe and highlights */
+    --text:        #0E1A26;
+    --muted:       #4A5A6A;
+    --heading-font: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+    --body-font:    "Barlow", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text);
+    font-family: var(--body-font);
+    font-size: 16px;
+    line-height: 1.55;
+}
+
+h1, h2, h3 {
+    font-family: var(--heading-font);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin: 0;
+}
+
+a { color: var(--runway); }
+
+button, select, input {
+    font-family: inherit;
+    font-size: 15px;
+}
+
+button:focus-visible, select:focus-visible, input:focus-visible {
+    outline: 3px solid var(--beacon);
+    outline-offset: 2px;
+}
+
+.wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ---------- Title bar ---------- */
+.titlebar {
+    background: var(--navy);
+    color: var(--navy-text);
+    border-bottom: 4px solid var(--beacon);
+}
+
+.titlebar .wrap {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px 24px;
+    padding-top: 22px;
+    padding-bottom: 20px;
+}
+
+.titlebar .eyebrow {
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #BFD4EA;
+    margin: 0 0 4px;
+}
+
+.titlebar h1 {
+    font-size: clamp(30px, 4.4vw, 46px);
+    line-height: 1.05;
+}
+
+.titlebar .subtitle {
+    margin: 6px 0 0;
+    color: #E3EDF7;
+    max-width: 62ch;
+}
+
+.titlebar .jump {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.titlebar .jump a {
+    color: var(--navy-text);
+    border: 1px solid #5F7FA3;
+    padding: 7px 12px;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.titlebar .jump a:hover {
+    background: var(--runway);
+    border-color: var(--runway);
+}
+
+/* ---------- Filter bar (stays at the top) ---------- */
+.filters {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--sky);
+    color: var(--sky-text);
+    border-bottom: 1px solid var(--border);
+}
+
+.filters .wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px 14px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.field label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.field select {
+    padding: 6px 8px;
+    border: 1px solid #9DB6CC;
+    background: #FFFFFF;
+    color: #000000;
+    border-radius: 0;
+    max-width: 190px;
+}
+
+.btn {
+    background: var(--runway);
+    color: var(--runway-text);
+    border: 1px solid var(--runway);
+    padding: 7px 14px;
+    cursor: pointer;
+    border-radius: 0;
+}
+
+.btn:hover { background: var(--runway-hover); }
+
+.btn.secondary {
+    background: #FFFFFF;
+    color: #000000;
+    border-color: #9DB6CC;
+}
+
+.btn.secondary:hover { background: var(--sky); }
+
+.filters .status {
+    margin-left: auto;
+    font-size: 14px;
+    align-self: center;
+}
+
+/* On phones the filters take too much room to stay pinned, so they scroll with the page */
+@media (max-width: 760px) {
+    .filters { position: static; }
+}
+
+/* ---------- Sections ---------- */
+main { padding-bottom: 48px; }
+
+section { padding-top: 34px; }
+
+.section-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 6px 20px;
+    margin-bottom: 14px;
+}
+
+.section-head h2 {
+    font-size: 30px;
+}
+
+.section-head p {
+    margin: 0;
+    color: var(--muted);
+    max-width: 70ch;
+}
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 18px 20px;
+    min-width: 0;
+}
+
+.card h3 {
+    font-size: 22px;
+    margin-bottom: 2px;
+}
+
+.card .note {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 10px;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+@media (max-width: 860px) {
+    .grid-2 { grid-template-columns: 1fr; }
+}
+
+/* ---------- Key numbers ---------- */
+.kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+}
+
+.kpi {
+    background: var(--surface);
+    padding: 16px 18px;
+}
+
+.kpi .value {
+    font-family: var(--heading-font);
+    font-size: 40px;
+    font-weight: 600;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+}
+
+.kpi .label {
+    font-weight: 600;
+}
+
+.kpi .sub {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+@media (max-width: 760px) {
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ---------- Charts ---------- */
+.chart svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.chart text {
+    font-family: var(--body-font);
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 14px;
+    margin-bottom: 6px;
+}
+
+.legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend i {
+    display: inline-block;
+    width: 14px;
+    height: 4px;
+}
+
+.legend i.box {
+    height: 12px;
+}
+
+.insight {
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    background: var(--page);
+    border-left: 4px solid var(--beacon);
+}
+
+.clickable { cursor: pointer; }
+
+.tooltip {
+    position: absolute;
+    z-index: 200;
+    pointer-events: none;
+    background: var(--navy);
+    color: #FFFFFF;
+    padding: 8px 10px;
+    font-size: 13px;
+    line-height: 1.4;
+    max-width: 260px;
+}
+
+/* ---------- Risk check ---------- */
+.risk-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 18px;
+}
+
+@media (max-width: 860px) {
+    .risk-grid { grid-template-columns: 1fr; }
+}
+
+.live-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 14px;
+}
+
+.live-row select {
+    padding: 7px 8px;
+    border: 1px solid #9DB6CC;
+    border-radius: 0;
+    min-width: 170px;
+}
+
+.live-status {
+    font-size: 14px;
+    color: var(--muted);
+    margin: 0 0 12px;
+    min-height: 1.4em;
+}
+
+.slider {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr) 96px;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.slider label { font-weight: 600; }
+
+.slider input[type="range"] {
+    width: 100%;
+    accent-color: var(--runway);
+}
+
+.slider output {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+@media (max-width: 520px) {
+    .slider { grid-template-columns: 1fr 80px; }
+    .slider input[type="range"] { grid-column: 1 / -1; grid-row: 2; }
+}
+
+.score-value {
+    font-family: var(--heading-font);
+    font-size: 64px;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.score-band {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 3px 10px;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+.gauge {
+    position: relative;
+    height: 18px;
+    margin: 14px 0 4px;
+    display: grid;
+    grid-template-columns: 30fr 30fr 40fr;
+}
+
+.gauge div:nth-child(1) { background: #3E8BCB; }
+.gauge div:nth-child(2) { background: #E08E2B; }
+.gauge div:nth-child(3) { background: #B23A48; }
+
+.gauge .needle {
+    position: absolute;
+    top: -6px;
+    width: 4px;
+    height: 30px;
+    background: #000000;
+    transform: translateX(-2px);
+    transition: left 0.4s ease;
+}
+
+.gauge-scale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+table.breakdown {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14px;
+    font-size: 15px;
+}
+
+.breakdown th, .breakdown td {
+    text-align: left;
+    padding: 7px 6px;
+    border-bottom: 1px solid var(--border);
+}
+
+.breakdown td.num, .breakdown th.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.disclaimer {
+    font-size: 14px;
+    color: var(--muted);
+    margin: 14px 0 0;
+}
+
+/* ---------- About ---------- */
+.about p { max-width: 80ch; }
+
+footer {
+    background: var(--navy);
+    color: #E3EDF7;
+    padding: 22px 0;
+    font-size: 14px;
+}
+
+footer a { color: #FFFFFF; }
+
+.loading {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--muted);
+}
+
+/* ---------- Fade-in as sections scroll into view ---------- */
+.fade-ready .fade-item {
+    transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.fade-ready .fade-item:not(.show) {
+    opacity: 0;
+    transform: translateY(22px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .fade-ready .fade-item {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+    .gauge .needle { transition: none; }
+}
