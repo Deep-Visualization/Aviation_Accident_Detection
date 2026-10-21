@@ -8,7 +8,7 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=6">
     <!-- Hide sections before the first paint so they can fade in -->
     <script>document.documentElement.classList.add("fade-ready");</script>
 </head>
@@ -99,35 +99,28 @@
                 <span class="k">Weather risk</span>
                 <div class="score"><span id="score">–</span><small>/100</small></div>
                 <span class="band" id="band">–</span>
-                <div class="gauge" aria-hidden="true">
-                    <div></div><div></div><div></div>
-                    <span class="needle" id="needle" style="left:0%"></span>
-                </div>
-                <div class="gauge-scale"><span>0</span><span>30</span><span>60</span><span>100</span></div>
+                <ul class="bands" id="bands">
+                    <li data-band="Low"><strong>0–29 Low:</strong> weather close to normal, with at most one or two minor factors such as humid air or light haze.</li>
+                    <li data-band="Moderate"><strong>30–59 Moderate:</strong> several factors adding up, or one serious one such as visibility under 2,000 m or strong wind.</li>
+                    <li data-band="High"><strong>60–100 High:</strong> serious factors together, such as strong wind with poor visibility.</li>
+                </ul>
             </div>
         </article>
 
-        <div class="grid-2">
-            <div class="card fade-item">
-                <h3>Why this score</h3>
-                <p class="note">The same rules as <code>compute_rule_based_risk()</code> in <code>model_utils.py</code>.</p>
-                <table class="breakdown">
-                    <thead><tr><th>Factor</th><th>Now</th><th>Rule met</th><th class="num">Points</th></tr></thead>
-                    <tbody id="breakdown"></tbody>
-                    <tfoot><tr><td colspan="3">Total (capped at 100)</td><td class="num" id="total">0</td></tr></tfoot>
-                </table>
-            </div>
-            <div class="card fade-item">
-                <h3>What the records show</h3>
-                <p class="note" id="hist-note">Accidents involving the closest matching aircraft group.</p>
-                <div class="history" id="history"></div>
-                <div class="legend">
-                    <span><i style="background:#B23A48"></i>Fatal</span>
-                    <span><i style="background:#E08E2B"></i>Aircraft destroyed</span>
-                </div>
-                <div id="chart-hist"></div>
-                <p class="insight" id="hist-insight"></p>
-            </div>
+    </section>
+
+    <!-- ===== Why this score ===== -->
+    <section aria-labelledby="why-title">
+        <div class="section-head fade-item">
+            <h2 id="why-title" class="section-title">Why this score</h2>
+            <p>The same rules as <code>compute_rule_based_risk()</code> in <code>model_utils.py</code>.</p>
+        </div>
+        <div class="card score-card fade-item">
+            <table class="breakdown">
+                <thead><tr><th>Factor</th><th>Now</th><th>Rule met</th><th class="num">Points</th></tr></thead>
+                <tbody id="breakdown"></tbody>
+                <tfoot><tr><td colspan="3">Total (capped at 100)</td><td class="num" id="total">0</td></tr></tfoot>
+            </table>
         </div>
     </section>
 
@@ -154,7 +147,7 @@
             <li><strong>Live weather.</strong> The page asks Open-Meteo for the current temperature, humidity, wind, visibility and conditions at the city. (The Flask app, <code>app.py</code>, used OpenWeatherMap, which needs a private API key that a public web page can't hide.)</li>
             <li><strong>Weather risk score.</strong> Each factor adds points using the thresholds from <code>model_utils.py</code>, so the score is fully explained in the table.</li>
             <li><strong>Flight rules.</strong> Visibility under 4,800 m (3 statute miles), fog or thunderstorms are treated as instrument-like conditions (IMC); otherwise visual (VMC).</li>
-            <li><strong>Historical context.</strong> The aircraft type is matched to the closest engine group in the NTSB records, and the page shows how often accidents in that group and those flight rules were fatal or destroyed the aircraft.</li>
+            <li><strong>Historical context.</strong> Each aircraft type is matched to the closest engine group in the NTSB records, and the comparison chart shows how often accidents in that group were fatal in visual and instrument conditions.</li>
         </ol>
         <p class="disclaimer fade-item">For exploring the data only, not for real flight decisions. The trained Random Forest model (<code>aircraft_damage_rf_model_smote.joblib</code>) isn't included in the repository, so it isn't used here; <code>app.py</code> falls back to the same rule-based score when the model is missing.</p>
     </section>
@@ -175,6 +168,6 @@
     </div>
 </footer>
 
-<script src="app.js?v=3"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
