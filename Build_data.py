@@ -1,8 +1,8 @@
 """
-Build data/accidents.json for the web page from "NTSB Cleaned dataset.xlsx".
+Build Accidents.json for the web page from "NTSB Cleaned dataset.xlsx".
 
 Run from the project folder:
-    python build_data.py
+    python Build_data.py
 
 The JSON stores one column per field (compact codes plus lookup lists),
 so the browser can filter all ~88,000 records instantly.
@@ -11,7 +11,7 @@ import json
 import pandas as pd
 
 SOURCE = "NTSB Cleaned dataset.xlsx"
-OUTPUT = "data/accidents.json"
+OUTPUT = "Accidents.json"
 
 df = pd.read_excel(SOURCE)
 
