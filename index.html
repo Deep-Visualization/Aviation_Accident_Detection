@@ -8,7 +8,7 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=3">
     <!-- Hide sections before the first paint so they can fade in -->
     <script>document.documentElement.classList.add("fade-ready");</script>
 </head>
@@ -162,7 +162,7 @@
     <section aria-labelledby="about-title" class="about">
         <h2 id="about-title" class="section-title fade-item">About this project</h2>
         <div class="card fade-item">
-            <p>The interactive web version of my Master's project, the Aviation Accident Risk Prediction and Analysis System, built for CIS 550 – Advanced Machine Learning at the University of Massachusetts Dartmouth (instructor: Dr. Firas Khatib, May 2026). The original Python project (Flask app, Random Forest model with SMOTE, Streamlit and Power BI dashboards) is in this repository.</p>
+            <p>The interactive web version of the Aviation Accident Risk Prediction and Analysis System, my Master's project for the M.S. in Computer and Information Science at the University of Massachusetts Dartmouth. The original Python project (Flask app, Random Forest model with SMOTE, Streamlit and Power BI dashboards) is in this repository.</p>
             <p><strong>Data:</strong> NTSB Aviation Accident Database, cleaned (<code>NTSB Cleaned dataset.xlsx</code>): 87,944 accidents from 1982 to 2022, about 92% in the United States. <code>Build_data.py</code> converts the spreadsheet into <code>Accidents.json</code> for this page.</p>
         </div>
     </section>
@@ -175,6 +175,6 @@
     </div>
 </footer>
 
-<script src="app.js"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
