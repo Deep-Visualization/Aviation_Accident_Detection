@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aviation Accident Explorer</title>
-    <meta name="description" content="Interactive explorer of 87,944 NTSB aviation accident records (1982-2022), with a weather-based risk check.">
+    <title>Flight Weather Risk Check</title>
+    <meta name="description" content="Pick a city and an aircraft type to get live weather, a weather risk score, and what 87,944 NTSB accident records show for similar flights.">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <!-- Hide sections before the first paint so they can fade in -->
     <script>document.documentElement.classList.add("fade-ready");</script>
@@ -16,201 +16,155 @@
 
 <header class="titlebar">
     <div class="wrap">
-        <div>
-            <p class="eyebrow">NTSB records · 1982–2022</p>
-            <h1>Aviation Accident Explorer</h1>
-            <p class="subtitle">Explore nearly 88,000 aviation accidents to see how weather, flight purpose and aircraft type relate to damage and loss of life, then check the weather risk for a city.</p>
-        </div>
-        <nav class="jump" aria-label="Jump to section">
-            <a href="#trends">Trends</a>
-            <a href="#weather">Weather</a>
-            <a href="#who">Flights</a>
-            <a href="#risk">Risk check</a>
-            <a href="#about">About</a>
-        </nav>
+        <p class="eyebrow">Aviation Accident Risk Prediction</p>
+        <h1>Flight Weather Risk Check</h1>
+        <p class="subtitle">Choose a departure city and an aircraft. The page gets the live weather, scores the weather risk, and shows what nearly 88,000 NTSB accident records say about similar flights.</p>
     </div>
 </header>
 
-<div class="filters" id="filters">
-    <div class="wrap">
-        <div class="field">
-            <label for="f-from">From</label>
-            <select id="f-from"></select>
-        </div>
-        <div class="field">
-            <label for="f-to">To</label>
-            <select id="f-to"></select>
-        </div>
-        <div class="field">
-            <label for="f-weather">Weather</label>
-            <select id="f-weather"></select>
-        </div>
-        <div class="field">
-            <label for="f-damage">Aircraft damage</label>
-            <select id="f-damage"></select>
-        </div>
-        <div class="field">
-            <label for="f-purpose">Purpose of flight</label>
-            <select id="f-purpose"></select>
-        </div>
-        <div class="field">
-            <label for="f-engine">Engine type</label>
-            <select id="f-engine"></select>
-        </div>
-        <div class="field">
-            <label for="f-place">Location type</label>
-            <select id="f-place"></select>
-        </div>
-        <button class="btn secondary" id="f-reset" type="button">Reset filters</button>
-        <span class="status" id="status" aria-live="polite">Loading records…</span>
-    </div>
-</div>
-
 <main class="wrap">
 
-    <section aria-label="Key numbers">
-        <div class="kpis fade-item" id="kpis">
-            <div class="kpi"><div class="value" id="k-acc">–</div><div class="label">Accidents</div><div class="sub" id="k-acc-sub">&nbsp;</div></div>
-            <div class="kpi"><div class="value" id="k-fatal">–</div><div class="label">Fatal accidents</div><div class="sub" id="k-fatal-sub">&nbsp;</div></div>
-            <div class="kpi"><div class="value" id="k-deaths">–</div><div class="label">Lives lost</div><div class="sub" id="k-deaths-sub">&nbsp;</div></div>
-            <div class="kpi"><div class="value" id="k-destroyed">–</div><div class="label">Aircraft destroyed</div><div class="sub" id="k-destroyed-sub">&nbsp;</div></div>
-        </div>
-    </section>
+    <!-- ===== Step 1: choose a flight ===== -->
+    <section class="planner fade-item" aria-labelledby="plan-title">
+        <h2 id="plan-title" class="sr-only">Plan a check</h2>
+        <form id="plan" class="plan-form">
+            <div class="field">
+                <label for="city">Departure city</label>
+                <select id="city"></select>
+            </div>
+            <div class="field">
+                <label for="aircraft">Aircraft type</label>
+                <select id="aircraft"></select>
+            </div>
+            <button class="btn primary" type="submit" id="check-btn">Check flight risk</button>
+            <label class="toggle"><input type="checkbox" id="manual"> Enter the weather myself</label>
+        </form>
+        <p class="live-status" id="live-status" aria-live="polite">Getting live weather…</p>
 
-    <section id="trends">
-        <div class="section-head fade-item">
-            <h2>Accidents over time</h2>
-            <p>Hover over the chart to read each year. Use the From and To filters to zoom into a period.</p>
-        </div>
-        <div class="card chart fade-item">
-            <div class="legend">
-                <span><i style="background:#3E8BCB"></i>All accidents</span>
-                <span><i style="background:#B23A48"></i>Fatal accidents</span>
+        <div class="manual" id="manual-panel" hidden>
+            <div class="slider">
+                <label for="s-temp">Temperature</label>
+                <input type="range" id="s-temp" min="-30" max="50" step="1" value="20">
+                <output id="o-temp" for="s-temp"></output>
             </div>
-            <div id="chart-years"></div>
-        </div>
-    </section>
-
-    <section id="weather">
-        <div class="section-head fade-item">
-            <h2>Weather and outcomes</h2>
-            <p>VMC means pilots could fly by sight. IMC means they had to rely on instruments: cloud, fog, or poor visibility.</p>
-        </div>
-        <div class="grid-2">
-            <div class="card chart fade-item">
-                <h3>How bad were the outcomes?</h3>
-                <p class="note">Share of accidents in each weather condition that were fatal, or that destroyed the aircraft. Click a condition to filter.</p>
-                <div class="legend">
-                    <span><i class="box" style="background:#B23A48"></i>Fatal</span>
-                    <span><i class="box" style="background:#E08E2B"></i>Aircraft destroyed</span>
-                </div>
-                <div id="chart-weather"></div>
-                <p class="insight" id="weather-insight"></p>
+            <div class="slider">
+                <label for="s-hum">Humidity</label>
+                <input type="range" id="s-hum" min="0" max="100" step="1" value="50">
+                <output id="o-hum" for="s-hum"></output>
             </div>
-            <div class="card chart fade-item">
-                <h3>Aircraft damage</h3>
-                <p class="note">Number of accidents by the damage done to the aircraft. Click a bar to filter.</p>
-                <div id="chart-damage"></div>
+            <div class="slider">
+                <label for="s-wind">Wind speed</label>
+                <input type="range" id="s-wind" min="0" max="60" step="1" value="5">
+                <output id="o-wind" for="s-wind"></output>
             </div>
-        </div>
-    </section>
-
-    <section id="who">
-        <div class="section-head fade-item">
-            <h2>What kind of flights</h2>
-            <p>Bars show the number of accidents; the figure at the end of each bar is the share that were fatal. Click any bar to filter the whole page.</p>
-        </div>
-        <div class="grid-2">
-            <div class="card chart fade-item">
-                <h3>Purpose of flight</h3>
-                <div id="chart-purpose"></div>
+            <div class="slider">
+                <label for="s-vis">Visibility</label>
+                <input type="range" id="s-vis" min="0" max="10000" step="100" value="10000">
+                <output id="o-vis" for="s-vis"></output>
             </div>
-            <div class="card chart fade-item">
-                <h3>Engine type</h3>
-                <div id="chart-engine"></div>
-            </div>
-            <div class="card chart fade-item">
-                <h3>Where it happened</h3>
-                <div id="chart-place"></div>
-            </div>
-            <div class="card chart fade-item">
-                <h3>Month of the year</h3>
-                <p class="note">Accidents in each month across the selected years.</p>
-                <div id="chart-month"></div>
+            <div class="slider">
+                <label for="s-cond">Conditions</label>
+                <select id="s-cond">
+                    <option>Clear</option><option>Clouds</option><option>Fog</option>
+                    <option>Rain</option><option>Snow</option><option>Thunderstorm</option>
+                </select>
+                <span></span>
             </div>
         </div>
     </section>
 
-    <section id="risk">
-        <div class="section-head fade-item">
-            <h2>Weather risk check</h2>
-            <p>Load live weather for a city, or set the conditions yourself, to see the weather risk score.</p>
-        </div>
-        <div class="risk-grid">
-            <div class="card fade-item">
-                <h3>Conditions</h3>
-                <div class="live-row">
-                    <div class="field">
-                        <label for="city">City</label>
-                        <select id="city"></select>
-                    </div>
-                    <button class="btn" id="live-btn" type="button">Get live weather</button>
+    <!-- ===== Step 2: the briefing ===== -->
+    <section aria-labelledby="brief-title">
+        <h2 id="brief-title" class="section-title fade-item">Pre-flight weather briefing</h2>
+        <article class="pass fade-item" id="pass" aria-live="polite">
+            <div class="pass-main">
+                <div class="pass-head">
+                    <span>Weather briefing</span>
+                    <span id="p-source">Live weather</span>
                 </div>
-                <p class="live-status" id="live-status" aria-live="polite">Or adjust the sliders below.</p>
-
-                <div class="slider">
-                    <label for="s-temp">Temperature</label>
-                    <input type="range" id="s-temp" min="-30" max="50" step="1" value="20">
-                    <output id="o-temp" for="s-temp"></output>
+                <div class="pass-route">
+                    <div><span class="k">From</span><span class="v" id="p-city">–</span></div>
+                    <div><span class="k">Aircraft</span><span class="v" id="p-aircraft">–</span></div>
+                    <div><span class="k">Local time</span><span class="v mono" id="p-time">–</span></div>
                 </div>
-                <div class="slider">
-                    <label for="s-hum">Humidity</label>
-                    <input type="range" id="s-hum" min="0" max="100" step="1" value="50">
-                    <output id="o-hum" for="s-hum"></output>
-                </div>
-                <div class="slider">
-                    <label for="s-wind">Wind speed</label>
-                    <input type="range" id="s-wind" min="0" max="60" step="1" value="5">
-                    <output id="o-wind" for="s-wind"></output>
-                </div>
-                <div class="slider">
-                    <label for="s-vis">Visibility</label>
-                    <input type="range" id="s-vis" min="0" max="10000" step="100" value="10000">
-                    <output id="o-vis" for="s-vis"></output>
+                <div class="pass-wx">
+                    <div><span class="k">Conditions</span><span class="v" id="p-cond">–</span></div>
+                    <div><span class="k">Temperature</span><span class="v mono" id="p-temp">–</span></div>
+                    <div><span class="k">Humidity</span><span class="v mono" id="p-hum">–</span></div>
+                    <div><span class="k">Wind</span><span class="v mono" id="p-wind">–</span></div>
+                    <div><span class="k">Visibility</span><span class="v mono" id="p-vis">–</span></div>
+                    <div><span class="k">Flight rules</span><span class="v" id="p-rules">–</span></div>
                 </div>
             </div>
-
-            <div class="card fade-item">
-                <h3>Weather risk score</h3>
-                <div>
-                    <span class="score-value" id="score">0</span><span class="score-value" style="font-size:32px">/100</span>
-                    <span class="score-band" id="band">Low</span>
-                </div>
+            <div class="pass-stub">
+                <span class="k">Weather risk</span>
+                <div class="score"><span id="score">–</span><small>/100</small></div>
+                <span class="band" id="band">–</span>
                 <div class="gauge" aria-hidden="true">
                     <div></div><div></div><div></div>
                     <span class="needle" id="needle" style="left:0%"></span>
                 </div>
-                <div class="gauge-scale"><span>0 Low</span><span>30 Moderate</span><span>60 High</span><span>100</span></div>
+                <div class="gauge-scale"><span>0</span><span>30</span><span>60</span><span>100</span></div>
+            </div>
+        </article>
 
-                <table class="breakdown" aria-label="How the score is calculated">
-                    <thead><tr><th>Factor</th><th>Rule met</th><th class="num">Points</th></tr></thead>
+        <div class="grid-2">
+            <div class="card fade-item">
+                <h3>Why this score</h3>
+                <p class="note">The same rules as <code>compute_rule_based_risk()</code> in <code>model_utils.py</code>.</p>
+                <table class="breakdown">
+                    <thead><tr><th>Factor</th><th>Now</th><th>Rule met</th><th class="num">Points</th></tr></thead>
                     <tbody id="breakdown"></tbody>
+                    <tfoot><tr><td colspan="3">Total (capped at 100)</td><td class="num" id="total">0</td></tr></tfoot>
                 </table>
-
-                <p class="insight" id="risk-context"></p>
-                <p class="disclaimer">This uses the rule-based score from <code>model_utils.py</code> in this project. It's for exploring the data, not for flight decisions. The trained Random Forest model file isn't included in the repository, so it isn't used here. Live weather comes from Open-Meteo.</p>
+            </div>
+            <div class="card fade-item">
+                <h3>What the records show</h3>
+                <p class="note" id="hist-note">Accidents involving the closest matching aircraft group.</p>
+                <div class="history" id="history"></div>
+                <div class="legend">
+                    <span><i style="background:#B23A48"></i>Fatal</span>
+                    <span><i style="background:#E08E2B"></i>Aircraft destroyed</span>
+                </div>
+                <div id="chart-hist"></div>
+                <p class="insight" id="hist-insight"></p>
             </div>
         </div>
     </section>
 
-    <section id="about" class="about">
+    <!-- ===== Step 3: compare aircraft ===== -->
+    <section aria-labelledby="cmp-title">
         <div class="section-head fade-item">
-            <h2>About this project</h2>
+            <h2 id="cmp-title" class="section-title">How aircraft groups compare</h2>
+            <p>Share of accidents that were fatal, in clear visual conditions (VMC) and instrument conditions (IMC). Click a row to switch the aircraft above.</p>
         </div>
         <div class="card fade-item">
-            <p>This page is the interactive web version of my Aviation Accident Risk Prediction and Analysis System, built for CIS 550 – Advanced Machine Learning in the M.S. program at the University of Massachusetts Dartmouth. The original Python project (Flask app, Random Forest model with SMOTE, Streamlit and Power BI dashboards) is in this repository.</p>
-            <p><strong>Data:</strong> NTSB Aviation Accident Database, cleaned (<code>NTSB Cleaned dataset.xlsx</code>). The page uses the 87,944 records from 1982 to 2022; seven earlier records are left out because those years have only one or two records each. <code>Build_data.py</code> converts the spreadsheet into <code>Accidents.json</code> for the browser.</p>
-            <p><strong>Notes:</strong> about 92% of records are from the United States. Damage values with unusual spellings were merged (for example "substantial" into "Substantial"), and rare values are grouped as "Other / unknown".</p>
+            <div class="legend">
+                <span><i style="background:#3E8BCB"></i>Clear visual conditions (VMC)</span>
+                <span><i style="background:#6A4C9C"></i>Instrument conditions (IMC)</span>
+            </div>
+            <div id="chart-compare"></div>
+            <p class="note">Groups with fewer than 30 accidents in a condition are marked "small sample".</p>
+        </div>
+    </section>
+
+    <!-- ===== How it works ===== -->
+    <section aria-labelledby="how-title">
+        <h2 id="how-title" class="section-title fade-item">How it works</h2>
+        <ol class="steps fade-item">
+            <li><strong>Live weather.</strong> The page asks Open-Meteo for the current temperature, humidity, wind, visibility and conditions at the city. (The Flask app, <code>app.py</code>, used OpenWeatherMap, which needs a private API key that a public web page can't hide.)</li>
+            <li><strong>Weather risk score.</strong> Each factor adds points using the thresholds from <code>model_utils.py</code>, so the score is fully explained in the table.</li>
+            <li><strong>Flight rules.</strong> Visibility under 4,800 m (3 statute miles), fog or thunderstorms are treated as instrument-like conditions (IMC); otherwise visual (VMC).</li>
+            <li><strong>Historical context.</strong> The aircraft type is matched to the closest engine group in the NTSB records, and the page shows how often accidents in that group and those flight rules were fatal or destroyed the aircraft.</li>
+        </ol>
+        <p class="disclaimer fade-item">For exploring the data only, not for real flight decisions. The trained Random Forest model (<code>aircraft_damage_rf_model_smote.joblib</code>) isn't included in the repository, so it isn't used here; <code>app.py</code> falls back to the same rule-based score when the model is missing.</p>
+    </section>
+
+    <section aria-labelledby="about-title" class="about">
+        <h2 id="about-title" class="section-title fade-item">About this project</h2>
+        <div class="card fade-item">
+            <p>The interactive web version of my Aviation Accident Risk Prediction and Analysis System, built for CIS 550 – Advanced Machine Learning in the M.S. program at the University of Massachusetts Dartmouth. The original Python project (Flask app, Random Forest model with SMOTE, Streamlit and Power BI dashboards) is in this repository.</p>
+            <p><strong>Data:</strong> NTSB Aviation Accident Database, cleaned (<code>NTSB Cleaned dataset.xlsx</code>): 87,944 accidents from 1982 to 2022, about 92% in the United States. <code>Build_data.py</code> converts the spreadsheet into <code>Accidents.json</code> for this page.</p>
         </div>
     </section>
 </main>
