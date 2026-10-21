@@ -161,40 +161,59 @@ function sampleWeather(source) {
 }
 
 let request = 0;
-function getLiveWeather() {
+
+// Ask Open-Meteo for one set of fields; resolves to the JSON, or rejects with a short reason
+function askOpenMeteo(lat, lon, fields) {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+        `&current=${fields}&wind_speed_unit=ms&timezone=auto`;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
+    return fetch(url, { signal: ctrl.signal })
+        .then(r => r.json().catch(() => ({})).then(body => {
+            if (!r.ok || body.error) throw new Error(`Open-Meteo replied ${r.status}${body.reason ? ": " + body.reason : ""}`);
+            return body;
+        }))
+        .catch(err => { throw new Error(err.name === "AbortError" ? "the request timed out" : err.message); })
+        .finally(() => clearTimeout(timer));
+}
+
+async function getLiveWeather() {
     const [name, lat, lon] = CITIES[+d3.select("#city").property("value")];
     const id = ++request;
     d3.select("#live-status").text(`Getting the current weather for ${name}…`);
-    // Visibility is read from the hourly forecast for the current hour
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-        `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code` +
-        `&hourly=visibility&forecast_days=1&wind_speed_unit=ms&timezone=auto`;
-    fetch(url)
-        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-        .then(data => {
-            if (id !== request) return; // a newer city was picked
-            const c = data.current;
-            const hour = c.time.slice(0, 13) + ":00";
-            const i = data.hourly ? data.hourly.time.indexOf(hour) : -1;
-            const vis = i >= 0 && data.hourly.visibility[i] != null ? data.hourly.visibility[i] : 10000;
-            weather = {
-                temp: c.temperature_2m,
-                humidity: c.relative_humidity_2m,
-                wind: c.wind_speed_10m,
-                visibility: vis,
-                condition: conditionName(c.weather_code),
-                time: c.time,
-                source: "Live weather · Open-Meteo"
-            };
-            d3.select("#live-status").text(`Live weather for ${name} loaded.`);
-            render();
-        })
-        .catch(() => {
-            if (id !== request) return;
-            weather = sampleWeather("Sample values");
-            d3.select("#live-status").text("Live weather isn't available right now, so sample values are shown. Tick \"Enter the weather myself\" to set the conditions.");
-            render();
-        });
+    const base = "temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code";
+    let data = null, reason = "";
+    try {
+        data = await askOpenMeteo(lat, lon, base + ",visibility");
+    } catch (err) {
+        reason = err.message;
+        console.warn("Live weather with visibility failed:", reason);
+        try { data = await askOpenMeteo(lat, lon, base); } // try again without visibility
+        catch (err2) { reason = err2.message; console.warn("Live weather failed:", reason); }
+    }
+    if (id !== request) return; // a newer city was picked
+
+    if (data && data.current) {
+        const c = data.current;
+        weather = {
+            temp: c.temperature_2m,
+            humidity: c.relative_humidity_2m,
+            wind: c.wind_speed_10m,
+            visibility: c.visibility != null ? c.visibility : 10000,
+            condition: conditionName(c.weather_code),
+            time: c.time,
+            source: "Live weather · Open-Meteo"
+        };
+        d3.select("#live-status").text(`Live weather for ${name} loaded` +
+            (c.visibility == null ? " (visibility not reported, so 10 km is assumed)." : "."));
+    } else {
+        weather = sampleWeather("Sample values");
+        const why = reason === "Failed to fetch"
+            ? "your browser couldn't reach Open-Meteo. An ad or privacy blocker, a network filter or being offline can cause this"
+            : reason;
+        d3.select("#live-status").text(`Live weather isn't available: ${why}. Sample values are shown for now; tick "Enter the weather myself" to set the conditions.`);
+    }
+    render();
 }
 
 // ---------- Render the briefing ----------
@@ -217,9 +236,9 @@ function render() {
     d3.select("#p-rules").text(rules === "IMC" ? "Instrument (IMC)" : "Visual (VMC)");
 
     d3.select("#score").text(score);
-    d3.select("#needle").style("left", score + "%");
-    const band = score >= 60 ? ["High", "#B23A48", "#FFFFFF"] : score >= 30 ? ["Moderate", "#E08E2B", "#000000"] : ["Low", "#3E8BCB", "#000000"];
+        const band = score >= 60 ? ["High", "#B23A48", "#FFFFFF"] : score >= 30 ? ["Moderate", "#E08E2B", "#000000"] : ["Low", "#3E8BCB", "#000000"];
     d3.select("#band").text(band[0] + " risk").style("background", band[1]).style("color", band[2]);
+    d3.selectAll("#bands li").classed("on", function () { return this.dataset.band === band[0]; });
 
     d3.select("#breakdown").selectAll("tr").data(parts).join("tr")
         .attr("class", p => p[3] ? "hit" : null)
@@ -227,12 +246,11 @@ function render() {
     d3.select("#total").text(score);
 
     if (D) {
-        renderHistory(ac, rules);
         renderCompare(ac);
     }
 }
 
-// ---------- Historical context ----------
+// ---------- Accident counts for an aircraft group ----------
 function groupStats(ac) {
     const codes = ac.engines ? ac.engines.map(e => D.labels.engine.indexOf(e)) : null;
     const vmc = D.labels.weather.indexOf("VMC"), imc = D.labels.weather.indexOf("IMC");
@@ -247,64 +265,6 @@ function groupStats(ac) {
         if (D.damage[i] === 0) s[key].destroyed++;
     }
     return s;
-}
-
-function renderHistory(ac, rules) {
-    const s = groupStats(ac);
-    const now = s[rules], other = s[rules === "IMC" ? "VMC" : "IMC"];
-    d3.select("#hist-note").text(`Accidents involving ${ac.group}: ${fmt(s.all)} in the records.`);
-
-    d3.select("#history").html(
-        `<div><span class="big">${fmt(now.n)}</span><span class="lbl">accidents in ${rules}</span></div>` +
-        `<div><span class="big" style="color:${COLOR.fatal}">${pct(now.fatal / now.n)}</span><span class="lbl">were fatal</span></div>` +
-        `<div><span class="big">${pct(now.destroyed / now.n)}</span><span class="lbl">destroyed the aircraft</span></div>`);
-
-    // Small chart: fatal and destroyed rates in VMC and IMC
-    const sel = "#chart-hist";
-    const data = ["VMC", "IMC"].map(k => ({ k, ...s[k] })).filter(d => d.n > 0);
-    d3.select(sel).html("");
-    const w = Math.max(280, d3.select(sel).node().clientWidth);
-    const rowH = 62, m = { top: 4, right: 64, bottom: 24, left: 100 };
-    const h = m.top + m.bottom + data.length * rowH, iw = w - m.left - m.right;
-    const svg = d3.select(sel).append("svg").attr("viewBox", `0 0 ${w} ${h}`)
-        .attr("role", "img").attr("aria-label", `Fatal and destroyed rates for ${ac.group} in visual and instrument conditions`);
-    const g = svg.append("g").attr("transform", `translate(${m.left},${m.top})`);
-    const x = d3.scaleLinear().domain([0, 1]).range([0, iw]);
-    g.append("g").attr("transform", `translate(0,${data.length * rowH})`)
-        .call(d3.axisBottom(x).ticks(w < 420 ? 2 : 4).tickFormat(d3.format(".0%")))
-        .call(a => a.selectAll("text").attr("fill", COLOR.axis).attr("font-size", 12))
-        .call(a => a.selectAll("path,line").attr("stroke", "#9DB6CC"));
-
-    const row = g.selectAll(".hrow").data(data).join("g")
-        .attr("transform", (d, i) => `translate(0,${i * rowH})`);
-    row.append("rect").attr("x", -m.left).attr("y", 2).attr("width", w).attr("height", rowH - 4)
-        .attr("fill", d => d.k === rules ? "#DCEBF7" : "#FFFFFF");
-    row.append("text").attr("x", -10).attr("y", rowH / 2 - 6).attr("text-anchor", "end").attr("font-weight", 600).attr("fill", COLOR.text)
-        .text(d => d.k + (d.k === rules ? " (now)" : ""));
-    row.append("text").attr("x", -10).attr("y", rowH / 2 + 12).attr("text-anchor", "end").attr("font-size", 12).attr("fill", COLOR.axis)
-        .text(d => fmt(d.n) + (d.n < SMALL ? " · small" : ""));
-    [["fatal", COLOR.fatal, 10], ["destroyed", COLOR.destroyed, 32]].forEach(([key, col, yOff]) => {
-        row.append("rect").attr("y", yOff).attr("height", 18).attr("fill", col).attr("width", d => x(d[key] / d.n))
-            .on("mousemove", (e, d) => showTip(e, `<strong>${d.k}</strong><br>${fmt(d[key])} of ${fmt(d.n)} accidents ${key === "fatal" ? "were fatal" : "destroyed the aircraft"}`))
-            .on("mouseleave", hideTip);
-        row.append("text").attr("y", yOff + 14).attr("x", d => x(d[key] / d.n) + 6).attr("font-size", 13).attr("font-weight", 600)
-            .attr("fill", COLOR.text).text(d => pct(d[key] / d.n));
-    });
-
-    let text;
-    if (now.n < SMALL) {
-        text = `Only ${fmt(now.n)} accidents in the records match ${ac.group} in ${rules}, so treat these figures with caution.`;
-    } else if (other.n >= SMALL) {
-        const a = now.fatal / now.n, b = other.fatal / other.n;
-        const nowName = rules === "IMC" ? "instrument conditions, like now," : "visual conditions, like now,";
-        const otherName = rules === "IMC" ? "visual conditions" : "instrument conditions";
-        text = a >= b
-            ? `For ${ac.group}, an accident in ${nowName} was ${(a / b).toFixed(1)} times as likely to be fatal as one in ${otherName} (${pct(a)} against ${pct(b)}).`
-            : `For ${ac.group}, accidents in ${nowName} were less often fatal than in ${otherName} (${pct(a)} against ${pct(b)}).`;
-    } else {
-        text = `${pct(now.fatal / now.n)} of accidents involving ${ac.group} in ${rules} were fatal.`;
-    }
-    d3.select("#hist-insight").text(text);
 }
 
 // ---------- Compare all aircraft groups ----------
@@ -354,7 +314,7 @@ d3.json("Accidents.json").then(data => {
     render();
 }).catch(err => {
     console.error(err);
-    d3.select("#hist-note").text("The accident records couldn't load. Make sure Accidents.json is in the repository, then refresh.");
+    d3.select("#chart-compare").append("p").attr("class", "note").text("The accident records couldn't load. Make sure Accidents.json is in the repository, then refresh.");
 });
 
 weather = sampleWeather("Sample values");
